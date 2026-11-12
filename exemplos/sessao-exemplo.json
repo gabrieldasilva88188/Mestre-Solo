@@ -1,0 +1,98 @@
+{
+  "formato": "mestre-solo/sessao",
+  "versao": 1,
+  "exportadoEm": "2026-11-12T21:21:15.532Z",
+  "estado": {
+    "caos": 5,
+    "cena": 1,
+    "modoDados": "site",
+    "genero": "fantasia",
+    "probabilidade": 4,
+    "nivelMonstro": 0,
+    "cenaEsperada": "",
+    "fios": [
+      "Descobrir quem incendiou o moinho"
+    ],
+    "personagens": [
+      "Bento, o moleiro",
+      "Irmã Odila, curandeira"
+    ]
+  },
+  "eventos": [
+    {
+      "id": "mwe1ytis47pzf",
+      "quando": "2026-11-12T21:21:15.508Z",
+      "cena": 1,
+      "origem": "oraculo",
+      "foco": "Um personagem age",
+      "explicacao": "Alguém já conhecido toma uma iniciativa própria.",
+      "personagem": "Irmã Odila, curandeira",
+      "acao": "Esconder",
+      "tema": "Segredo",
+      "rolagemFoco": 22
+    }
+  ],
+  "historico": [
+    {
+      "id": "mwe1ytisi7r49",
+      "quando": "2026-11-12T21:21:15.508Z",
+      "cena": 1,
+      "tipo": "oraculo",
+      "titulo": "Oráculo",
+      "itens": [
+        {
+          "rotulo": "Pergunta",
+          "valor": "Bento viu quem ateou o fogo?"
+        },
+        {
+          "rotulo": "Probabilidade",
+          "valor": "Provável · 65% com Caos 5"
+        },
+        {
+          "rotulo": "Resposta",
+          "valor": "SIM",
+          "dado": 100,
+          "resultado": 22
+        }
+      ]
+    },
+    {
+      "id": "mwe1ytis621kv",
+      "quando": "2026-11-12T21:21:15.508Z",
+      "cena": 1,
+      "tipo": "evento",
+      "titulo": "Evento aleatório (do oráculo)",
+      "eventoId": "mwe1ytis47pzf",
+      "itens": [
+        {
+          "rotulo": "Foco",
+          "valor": "Um personagem age",
+          "detalhe": "Alguém já conhecido toma uma iniciativa própria.",
+          "dado": 100,
+          "resultado": 22
+        },
+        {
+          "rotulo": "Personagem",
+          "valor": "Irmã Odila, curandeira"
+        },
+        {
+          "rotulo": "Ação",
+          "valor": "Esconder"
+        },
+        {
+          "rotulo": "Tema",
+          "valor": "Segredo"
+        }
+      ]
+    },
+    {
+      "id": "mwe1ytisp994c",
+      "quando": "2026-11-12T21:21:15.508Z",
+      "cena": 1,
+      "tipo": "nota",
+      "titulo": "Anotação",
+      "itens": [],
+      "nota": "Bento viu alguém de capuz, e Odila parece estar escondendo algo sobre isso."
+    }
+  ]
+}
