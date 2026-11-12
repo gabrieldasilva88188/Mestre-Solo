@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mestre Solo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Plano: ficha de mesa em papel cartão cinza-esverdeado, tinta azul-noite, carimbo cobalto para respostas.
+   Layout: cabeçalho com Caos e modo de dados; abas à esquerda; diário, fios e personagens fixos à direita. */
+:root{
+  --paper:#e8ebe4;
+  --card:#f6f7f2;
+  --ink:#1a2029;
+  --muted:#58626e;
+  --line:#ccd2c8;
+  --accent:#2a48c9;
+  --accent-ink:#ffffff;
+  --yes:#1d7548;
+  --no:#a5302a;
+  --event:#9a6200;
+  --event-bg:#f3ead6;
+  --display:"IM Fell English SC", "Iowan Old Style", Georgia, serif;
+  --body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#11141a; --card:#191d25; --ink:#e4e7e1; --muted:#98a1ac; --line:#2c323c;
+    --accent:#8ea1ff; --accent-ink:#0e1220; --yes:#62cf97; --no:#ff8c82; --event:#f0b648; --event-bg:#2a2416;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#11141a; --card:#191d25; --ink:#e4e7e1; --muted:#98a1ac; --line:#2c323c;
+  --accent:#8ea1ff; --accent-ink:#0e1220; --yes:#62cf97; --no:#ff8c82; --event:#f0b648; --event-bg:#2a2416;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+.wrap{max-width:1260px;margin:0 auto;padding:22px 20px 64px}
+h1,h2,h3{text-wrap:balance}
+button{font-family:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Cabeçalho */
+.top{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:14px}
+.brand h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,5.5vw,58px);line-height:.95;margin:0}
+.brand p{margin:6px 0 0;font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.controls{display:flex;flex-wrap:wrap;gap:18px 26px;align-items:flex-end}
+.ctl{display:grid;gap:5px}
+.ctl .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.chaos{display:flex;align-items:center;gap:6px}
+.pips{display:flex;gap:3px}
+.pip{width:24px;height:30px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:var(--mono);font-size:12px;border-radius:3px;cursor:pointer;padding:0}
+.pip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pip.cur{font-weight:600;box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--accent)}
+.step{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--ink);background:transparent;color:var(--ink);font-size:18px;line-height:1;cursor:pointer}
+.seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--ink);padding:6px 13px;font-size:15px;font-weight:500;cursor:pointer}
+.seg button+button{border-left:1.5px solid var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.scene-badge{font-family:var(--mono);font-size:13px;padding:6px 10px;border:1.5px dashed var(--muted);border-radius:7px;color:var(--ink);white-space:nowrap}
+
+.manual-banner{margin:14px 0 0;padding:9px 14px;border-radius:8px;background:var(--event-bg);border-left:4px solid var(--event);font-size:15px}
+.manual-banner[hidden]{display:none}
+
+/* Abas */
+.tabs{display:flex;flex-wrap:wrap;gap:2px 6px;margin:16px 0 14px}
+.tabs a{font-family:var(--display);font-size:21px;padding:6px 12px 4px;text-decoration:none;color:var(--muted);border-bottom:3px solid transparent}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-color:var(--accent)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:22px;align-items:start}
+@media (max-width:940px){.layout{grid-template-columns:minmax(0,1fr)}}
+.view[hidden]{display:none}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px}
+.panel h2{font-family:var(--display);font-weight:400;font-size:30px;line-height:1.05;margin:0 0 6px}
+.panel h3{font-family:var(--display);font-weight:400;font-size:22px;margin:0 0 8px}
+.lead{color:var(--muted);margin:0 0 16px;max-width:65ch}
+.stack{display:grid;gap:16px}
+.hstack{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lab{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+
+.btn{font:600 15px/1.2 var(--body);padding:10px 16px;border-radius:7px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer}
+.btn:hover{filter:brightness(1.15)}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.small{padding:6px 11px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.inp,select.inp,textarea.inp{font:16px/1.4 var(--body);padding:9px 12px;border:1.5px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);width:100%}
+.inp:focus{border-color:var(--accent);outline:none}
+textarea.inp{resize:vertical;min-height:70px}
+
+/* Oráculo */
+.likgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:6px}
+.likgrid button{display:flex;justify-content:space-between;gap:6px;align-items:baseline;text-align:left;padding:8px 10px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:7px;cursor:pointer;font-size:15px}
+.likgrid button span{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.likgrid button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.likgrid button[aria-pressed="true"] span{color:var(--accent)}
+.bands{display:flex;height:26px;border-radius:5px;overflow:hidden;font-family:var(--mono);font-size:11px;margin-top:10px;border:1px solid var(--line)}
+.bands div{display:grid;place-items:center;white-space:nowrap;overflow:hidden;color:#fff}
+.bands .ey{background:var(--yes)} .bands .y{background:var(--yes);opacity:.7}
+.bands .n{background:var(--no);opacity:.7} .bands .en{background:var(--no)}
+.bandlegend{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+
+.stampbox{display:grid;place-items:center;min-height:190px;border:2px dashed var(--line);border-radius:10px;padding:22px;text-align:center;gap:10px}
+.stamp{font-family:var(--display);font-size:clamp(60px,11vw,104px);line-height:.85;border:5px solid currentColor;padding:12px 24px 4px;border-radius:9px;transform:rotate(-3deg);display:inline-block}
+.stamp small{display:block;font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;line-height:1.6}
+.stamp.yes{color:var(--yes)} .stamp.no{color:var(--no)} .stamp.idle{color:var(--line)}
+.stamp.anim{animation:stamp .38s cubic-bezier(.2,1.5,.45,1)}
+@keyframes stamp{from{transform:scale(1.7) rotate(-10deg);opacity:0}to{transform:scale(1) rotate(-3deg);opacity:1}}
+@media (prefers-reduced-motion:reduce){.stamp.anim{animation:none}}
+.stampnote{color:var(--muted);max-width:52ch;margin:0}
+
+/* Linhas de resultado */
+.rows{display:grid}
+.row{display:grid;grid-template-columns:10.5em minmax(0,1fr) auto;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.row:last-child{border-bottom:0}
+.row .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.row .v{font-weight:500}
+.row .v .x{display:block;font-weight:400;color:var(--muted);font-size:15px}
+.die{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+@media (max-width:540px){.row{grid-template-columns:minmax(0,1fr) auto}.row .k{grid-column:1/-1;margin-bottom:-6px}}
+.event{border-left:4px solid var(--event);background:var(--event-bg);border-radius:0 8px 8px 0;padding:10px 14px}
+.event h3{color:var(--event);font-size:20px;margin:0 0 4px}
+.out:empty{display:none}
+.out{display:grid;gap:14px}
+.result-title{font-family:var(--display);font-size:26px;line-height:1.1;margin:0}
+.rule{font-size:15px;color:var(--muted);margin:0;max-width:68ch}
+.rule b{color:var(--ink);font-weight:600}
+
+/* Tabelas */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.tiles button{text-align:left;padding:11px 12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;cursor:pointer;font-size:16px;font-weight:600;line-height:1.25}
+.tiles button span{display:block;font-weight:400;font-size:13px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.tiles button:hover{border-color:var(--ink)}
+details.tbl{border-top:1px solid var(--line);padding:8px 0}
+details.tbl summary{cursor:pointer;font-weight:600;display:flex;justify-content:space-between;gap:10px}
+details.tbl summary span{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:400}
+.tbllist{columns:2 230px;column-gap:28px;margin:10px 0 4px;padding:0;list-style:none;font-size:15px}
+.tbllist li{break-inside:avoid;padding:2px 0;display:flex;gap:10px}
+.tbllist .rg{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:4.6em;font-variant-numeric:tabular-nums;padding-top:2px}
+
+/* Dados */
+.dicebar{display:flex;flex-wrap:wrap;gap:6px}
+.dicebar button{min-width:58px;padding:10px 8px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);border-radius:8px;font-family:var(--mono);font-size:15px;font-weight:600;cursor:pointer}
+.dicebar button:hover{background:var(--ink);color:var(--paper)}
+.bignum{font-family:var(--mono);font-size:72px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.dicedetail{font-family:var(--mono);font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.err{color:var(--no);font-size:15px;margin:0}
+.err:empty{display:none}
+
+/* Monstro */
+.statblock{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.stat{border:1.5px solid var(--ink);border-radius:8px;padding:8px 10px;text-align:center}
+.stat b{display:block;font-family:var(--mono);font-size:24px;font-variant-numeric:tabular-nums}
+.stat span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.desc{font-size:18px;margin:0;max-width:65ch}
+
+/* Lateral */
+.side{display:grid;gap:16px}
+@media (min-width:941px){.side{position:sticky;top:12px}}
+.list{list-style:none;margin:0 0 10px;padding:0;counter-reset:n}
+.list li{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px dashed var(--line);counter-increment:n}
+.list li::before{content:counter(n);font-family:var(--mono);font-size:12px;color:var(--muted);min-width:1.4em}
+.list li span{flex:1;min-width:0;overflow-wrap:anywhere}
+.list .empty{color:var(--muted);font-style:italic}
+.list .empty::before{content:""}
+.xbtn{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0 4px}
+.xbtn:hover{color:var(--no)}
+.addrow{display:flex;gap:6px}
+.addrow .inp{padding:7px 10px;font-size:15px}
+.log{max-height:560px;overflow:auto;margin:10px -6px 0;padding:0 6px}
+.entry{padding:10px 0;border-bottom:1px solid var(--line)}
+.entry .meta{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.05em}
+.entry .t{font-weight:700;margin:2px 0}
+.entry.ev .t{color:var(--event)}
+.entry ul{list-style:none;margin:0;padding:0;font-size:14.5px;line-height:1.4}
+.entry li b{font-weight:500;color:var(--muted)}
+.entry .note{white-space:pre-wrap;font-size:15px}
+
+/* Modal */
+.ov{position:fixed;inset:0;background:rgba(8,10,14,.58);display:none;place-items:center;padding:16px;z-index:50}
+.ov.open{display:grid}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px;width:100%;max-width:440px;display:grid;gap:12px}
+.modal .mdie{font-family:var(--mono);font-size:44px;font-weight:600;line-height:1;color:var(--accent)}
+.modal p{margin:0}
+.modal .mlabel{font-weight:600;font-size:18px}
+.modal .mhint{color:var(--muted);font-size:15px}
+.modal .inp{font-family:var(--mono);font-size:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Mestre Solo</h1>
+      <p>Oráculo · cenas · eventos · geradores</p>
+    </div>
+    <div class="controls">
+      <div class="ctl">
+        <span class="lbl" id="cfLabel">Fator de Caos</span>
+        <div class="chaos" role="group" aria-labelledby="cfLabel">
+          <button class="step" id="cfDown" aria-label="Diminuir caos">−</button>
+          <div class="pips" id="pips"></div>
+          <button class="step" id="cfUp" aria-label="Aumentar caos">+</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <span class="lbl" id="modeLabel">Quem rola os dados</span>
+        <div class="seg" role="group" aria-labelledby="modeLabel">
+          <button id="modeSite" aria-pressed="true">O site rola</button>
+          <button id="modeUser" aria-pressed="false">Eu rolo</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <span class="lbl">Cena atual</span>
+        <span class="scene-badge" id="sceneBadge">Cena 1</span>
+      </div>
+    </div>
+  </header>
+  <p class="manual-banner" id="manualBanner" hidden>Modo <b>Eu rolo</b>: role seus dados físicos e digite o resultado quando o site pedir. As faixas de cada tabela estão na aba Tabelas. Nomes gerados continuam sendo sorteados pelo site.</p>
+
+  <nav class="tabs" aria-label="Seções">
+    <a href="#oraculo" data-view="oraculo">Oráculo</a>
+    <a href="#cena" data-view="cena">Cenas</a>
+    <a href="#tabelas" data-view="tabelas">Tabelas</a>
+    <a href="#dados" data-view="dados">Dados</a>
+    <a href="#aventura" data-view="aventura">Aventura</a>
+    <a href="#monstro" data-view="monstro">Monstro</a>
+  </nav>
+
+  <div class="layout">
+    <main>
+      <!-- ORÁCULO -->
+      <section class="view panel stack" id="v-oraculo">
+        <div>
+          <h2>Pergunte ao oráculo</h2>
+          <p class="lead">Faça uma pergunta de sim ou não sobre a ficção, escolha o quão provável a resposta parece e role. Quanto maior o Caos, mais o mundo tende a dizer sim.</p>
+        </div>
+        <div>
+          <label class="lab" for="q">Pergunta</label>
+          <input class="inp" id="q" placeholder="Ex.: O guarda da ponte está acordado?" autocomplete="off">
+        </div>
+        <div>
+          <span class="lab" id="likLabel">Probabilidade</span>
+          <div class="likgrid" id="likgrid" role="group" aria-labelledby="likLabel"></div>
+          <div class="bands" id="bands" aria-hidden="true"></div>
+          <div class="bandlegend" id="bandlegend"></div>
+        </div>
+        <div class="hstack">
+          <button class="btn accent" id="askBtn">Rolar d100 e responder</button>
+          <button class="btn ghost" id="evBtn">Gerar evento aleatório</button>
+        </div>
+        <div class="stampbox" id="stampbox">
+          <div class="stamp idle" id="stamp">?<small>aguardando</small></div>
+          <p class="stampnote" id="stampnote">A resposta aparece aqui. Respostas excepcionais pedem algo mais forte: “sim, e ainda por cima…” ou “não, e pior…”.</p>
+        </div>
+        <div class="out" id="oracleOut"></div>
+        <p class="rule"><b>Evento aleatório:</b> acontece quando o d100 tira dígitos repetidos (11, 22, 33… 99) e o dígito é menor ou igual ao Fator de Caos. O evento acontece junto com a resposta.</p>
+      </section>
+
+      <!-- CENAS -->
+      <section class="view panel stack" id="v-cena" hidden>
+        <div>
+          <h2>Montar a cena</h2>
+          <p class="lead">Descreva a próxima cena como você espera que ela comece e teste-a contra o Caos. No d10, um resultado acima do Caos mantém a cena; até o Caos, ímpar altera a cena e par a interrompe com um evento.</p>
+        </div>
+        <div>
+          <label class="lab" for="sceneText">Cena esperada</label>
+          <textarea class="inp" id="sceneText" placeholder="Ex.: Chego ao moinho queimado ao entardecer e procuro pegadas."></textarea>
+        </div>
+        <div class="hstack">
+          <button class="btn accent" id="sceneBtn">Testar cena (d10)</button>
+        </div>
+        <div class="out" id="sceneOut"></div>
+        <div class="panel" style="background:var(--paper)">
+          <h3>Encerrar a cena</h3>
+          <p class="rule" style="margin-bottom:12px">No fim de cada cena, avalie quem estava no comando. Isso ajusta o Fator de Caos e avança para a próxima cena.</p>
+          <div class="hstack">
+            <button class="btn small" id="endDown">Eu estava no controle (Caos −1)</button>
+            <button class="btn small" id="endUp">Fugiu do controle (Caos +1)</button>
+            <button class="btn small ghost" id="endSame">Manter o Caos</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TABELAS -->
+      <section class="view panel stack" id="v-tabelas" hidden>
+        <div>
+          <h2>Tabelas de inspiração</h2>
+          <p class="lead">Quando o oráculo não basta, role significado. Combine as palavras com o que já sabe da história e fique com a primeira interpretação que fizer sentido.</p>
+        </div>
+        <div class="tiles" id="tiles"></div>
+        <div class="out" id="inspOut"></div>
+        <div>
+          <h3>Todas as tabelas</h3>
+          <p class="rule" style="margin-bottom:6px">Faixas para quem rola os próprios dados. Tabelas de 100 itens usam d100 direto.</p>
+          <div id="alltables"></div>
+        </div>
+      </section>
+
+      <!-- DADOS -->
+      <section class="view panel stack" id="v-dados" hidden>
+        <div>
+          <h2>Rolador de dados</h2>
+          <p class="lead">Clique em um dado ou digite uma expressão. Aceita somas, modificadores e manter maiores ou menores: <code>2d6+3</code>, <code>d20-1</code>, <code>4d6kh3</code>, <code>2d20kl1</code>.</p>
+        </div>
+        <div class="dicebar" id="dicebar"></div>
+        <form class="addrow" id="exprForm" autocomplete="off">
+          <label class="lab" for="expr" style="position:absolute;left:-9999px">Expressão</label>
+          <input class="inp" id="expr" placeholder="Ex.: 3d8+2" value="2d6+1">
+          <button class="btn accent" type="submit">Rolar</button>
+        </form>
+        <div class="hstack">
+          <button class="btn small ghost" data-expr="2d20kh1">Vantagem</button>
+          <button class="btn small ghost" data-expr="2d20kl1">Desvantagem</button>
+          <button class="btn small ghost" data-expr="4d6kh3">Atributo (4d6, 3 maiores)</button>
+          <button class="btn small ghost" data-expr="3d6">3d6</button>
+        </div>
+        <p class="err" id="exprErr"></p>
+        <div id="diceOut" class="stack" style="gap:6px">
+          <div class="bignum" id="bignum">—</div>
+          <div class="dicedetail" id="dicedetail">Nenhuma rolagem ainda.</div>
+        </div>
+      </section>
+
+      <!-- AVENTURA -->
+      <section class="view panel stack" id="v-aventura" hidden>
+        <div>
+          <h2>Gerador de aventuras</h2>
+          <p class="lead">Gera um gancho, quem pede ajuda, o objetivo, o lugar, o antagonista e a complicação, mais um roteiro em cinco cenas para guiar a sessão.</p>
+        </div>
+        <div class="hstack">
+          <div class="seg" role="group" aria-label="Gênero" id="genreSeg">
+            <button data-genre="fantasia" aria-pressed="true">Fantasia</button>
+            <button data-genre="horror" aria-pressed="false">Horror</button>
+            <button data-genre="scifi" aria-pressed="false">Ficção científica</button>
+          </div>
+          <button class="btn accent" id="advBtn">Gerar aventura</button>
+        </div>
+        <div class="out" id="advOut"></div>
+      </section>
+
+      <!-- MONSTRO -->
+      <section class="view panel stack" id="v-monstro" hidden>
+        <div>
+          <h2>Gerador de monstros</h2>
+          <p class="lead">Cria uma criatura com aparência, ataques, poder especial, fraqueza, comportamento e uma ficha genérica que você adapta ao seu sistema.</p>
+        </div>
+        <div class="hstack">
+          <label class="lab" for="mlevel" style="margin:0">Nível de ameaça</label>
+          <select class="inp" id="mlevel" style="width:auto">
+            <option value="0">Aleatório (d10)</option>
+            <option value="1">1 · Baixa</option><option value="2">2 · Baixa</option>
+            <option value="3">3 · Moderada</option><option value="4">4 · Moderada</option>
+            <option value="5">5 · Alta</option><option value="6">6 · Alta</option>
+            <option value="7">7 · Perigosa</option><option value="8">8 · Perigosa</option>
+            <option value="9">9 · Mortal</option><option value="10">10 · Mortal</option>
+          </select>
+          <button class="btn accent" id="monBtn">Gerar monstro</button>
+        </div>
+        <div class="out" id="monOut"></div>
+      </section>
+    </main>
+
+    <aside class="side">
+      <section class="panel">
+        <h3>Fios da história</h3>
+        <ul class="list" id="threadList"></ul>
+        <form class="addrow" id="threadForm" autocomplete="off">
+          <label for="threadIn" style="position:absolute;left:-9999px">Novo fio</label>
+          <input class="inp" id="threadIn" placeholder="Novo objetivo ou mistério">
+          <button class="btn small" type="submit">Adicionar</button>
+        </form>
+        <div class="hstack" style="margin-top:8px"><button class="btn small ghost" id="threadPick">Sortear fio</button></div>
+      </section>
+      <section class="panel">
+        <h3>Personagens</h3>
+        <ul class="list" id="npcList"></ul>
+        <form class="addrow" id="npcForm" autocomplete="off">
+          <label for="npcIn" style="position:absolute;left:-9999px">Novo personagem</label>
+          <input class="inp" id="npcIn" placeholder="Nome e papel">
+          <button class="btn small" type="submit">Adicionar</button>
+        </form>
+        <div class="hstack" style="margin-top:8px"><button class="btn small ghost" id="npcPick">Sortear personagem</button></div>
+      </section>
+      <section class="panel">
+        <h3>Diário</h3>
+        <label for="noteIn" style="position:absolute;left:-9999px">Anotação</label>
+        <textarea class="inp" id="noteIn" placeholder="O que aconteceu? Como você interpretou?"></textarea>
+        <div class="hstack" style="margin-top:8px">
+          <button class="btn small" id="noteBtn">Anotar</button>
+          <button class="btn small ghost" id="copyBtn">Copiar diário</button>
+          <button class="btn small ghost" id="clearBtn">Limpar</button>
+        </div>
+        <textarea class="inp" id="copyFallback" hidden readonly style="margin-top:8px;font-size:13px;min-height:120px"></textarea>
+        <div class="log" id="log"></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<div class="ov" id="ov" role="dialog" aria-modal="true" aria-labelledby="mLabel">
+  <div class="modal">
+    <div class="mdie" id="mDie">d100</div>
+    <p class="mlabel" id="mLabel">Role</p>
+    <p class="mhint" id="mHint"></p>
+    <label for="mIn" style="position:absolute;left:-9999px">Resultado</label>
+    <input class="inp" id="mIn" inputmode="numeric" autocomplete="off">
+    <p class="err" id="mErr"></p>
+    <div class="hstack">
+      <button class="btn accent" id="mOk">Usar meu resultado</button>
+      <button class="btn ghost" id="mAuto">Rolar por mim</button>
+      <button class="btn ghost" id="mRest">Rolar o resto por mim</button>
+      <button class="btn ghost" id="mCancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lowerFirst = s => s.charAt(0).toLowerCase() + s.slice(1);
+
+/* ---------- Tabelas ---------- */
+const T = {
+  acao: ["Abandonar","Abrir","Acusar","Adiar","Ajudar","Alertar","Aliar-se","Alterar","Ameaçar","Aprisionar",
+    "Arriscar","Atacar","Atrair","Banir","Barganhar","Bloquear","Buscar","Capturar","Celebrar","Cercar",
+    "Chamar","Comandar","Compartilhar","Competir","Confessar","Confrontar","Confundir","Conquistar","Construir","Contaminar",
+    "Controlar","Corromper","Criar","Cuidar","Curar","Decepcionar","Defender","Desafiar","Descobrir","Desmascarar",
+    "Despertar","Destruir","Desviar","Disfarçar","Dividir","Dominar","Duvidar","Enganar","Enfraquecer","Ensinar",
+    "Enterrar","Entregar","Envenenar","Escapar","Esconder","Espionar","Esquecer","Explorar","Expor","Falhar",
+    "Fortalecer","Fugir","Guiar","Herdar","Humilhar","Ignorar","Imitar","Inspirar","Investigar","Invadir",
+    "Isolar","Julgar","Libertar","Lembrar","Manipular","Mentir","Mover","Negociar","Oferecer","Perder",
+    "Perdoar","Perseguir","Possuir","Proteger","Provocar","Purificar","Questionar","Quebrar","Reconciliar","Recrutar",
+    "Recusar","Resgatar","Revelar","Roubar","Sabotar","Sacrificar","Seguir","Silenciar","Transformar","Trair"],
+  tema: ["Aliança","Ambição","Amizade","Amor","Ancestral","Arma","Armadilha","Autoridade","Batalha","Beleza",
+    "Bênção","Caminho","Caos","Castigo","Cidade","Ciúme","Conhecimento","Conflito","Coragem","Corrupção",
+    "Crença","Crime","Culpa","Cura","Dádiva","Dever","Desejo","Destino","Dinheiro","Doença",
+    "Dor","Engano","Escuridão","Esperança","Estrangeiro","Exílio","Fama","Família","Fé","Fome",
+    "Fronteira","Fuga","Futuro","Guerra","Herança","Honra","Identidade","Inimigo","Inocência","Inveja",
+    "Jornada","Juramento","Justiça","Lar","Lealdade","Lenda","Liberdade","Liderança","Loucura","Luz",
+    "Magia","Mapa","Medo","Memória","Mensagem","Mentira","Mistério","Monstro","Morte","Natureza",
+    "Notícia","Obsessão","Orgulho","Ouro","Paz","Passado","Perigo","Poder","Portal","Preço",
+    "Prisão","Profecia","Promessa","Recompensa","Refúgio","Relíquia","Ruína","Sangue","Segredo","Sobrevivência",
+    "Sonho","Tempo","Tecnologia","Tesouro","Tradição","Traição","Verdade","Viagem","Vingança","Vida"],
+  adjetivo: ["Antigo","Ameaçador","Abandonado","Belo","Brilhante","Barulhento","Calmo","Caótico","Colossal","Comum",
+    "Corrompido","Cruel","Delicado","Desconhecido","Desolado","Elegante","Enorme","Escondido","Estranho","Exótico",
+    "Familiar","Feroz","Frágil","Frio","Gentil","Gasto","Grotesco","Hostil","Imponente","Inquieto",
+    "Leal","Lento","Luxuoso","Majestoso","Misterioso","Molhado","Mórbido","Novo","Movimentado","Pacífico",
+    "Perigoso","Pesado","Pequeno","Podre","Poderoso","Quente","Quebrado","Rápido","Raro","Rústico",
+    "Sagrado","Selvagem","Silencioso","Simples","Sombrio","Sujo","Tenso","Úmido","Vazio","Vibrante"],
+  modo: ["Agressivamente","Alegremente","Ansiosamente","Bruscamente","Calmamente","Cautelosamente","Cruelmente","Desajeitadamente","Desesperadamente","Discretamente",
+    "Elegantemente","Estranhamente","Friamente","Furiosamente","Gentilmente","Habilmente","Lentamente","Loucamente","Misteriosamente","Nervosamente",
+    "Orgulhosamente","Pacientemente","Rapidamente","Ruidosamente","Secretamente","Silenciosamente","Solenemente","Teimosamente","Tristemente","Violentamente"],
+  local: ["Taverna","Mercado","Templo","Ruínas","Floresta","Caverna","Porto","Ponte","Torre","Cemitério",
+    "Biblioteca","Pântano","Estrada","Acampamento","Mansão","Esgoto","Mina","Fortaleza","Vila","Deserto"],
+  objeto: ["Chave","Carta lacrada","Mapa rasgado","Amuleto","Lâmina quebrada","Livro sem título","Frasco lacrado","Moeda estranha","Máscara","Anel",
+    "Diário","Pequena estátua","Corda","Lanterna","Coroa","Osso entalhado","Espelho","Sino","Retrato","Caixa trancada"],
+  profissao: ["Ferreiro","Mercador","Sacerdotisa","Guarda","Ladra","Erudito","Caçadora","Marinheiro","Curandeira","Nobre",
+    "Mendigo","Barda","Soldado","Contrabandista","Fazendeira","Alquimista","Mensageiro","Cartógrafa","Estalajadeira","Mercenário"],
+  traco: ["Desconfiado","Generoso","Ganancioso","Nervoso","Arrogante","Leal","Curioso","Exausto","Alegre","Rancoroso",
+    "Supersticioso","Corajoso","Covarde","Sarcástico","Gentil","Ambicioso","Distraído","Honesto","Mentiroso","Reservado"],
+  motivacao: ["Riqueza","Vingança","Proteger alguém","Conhecimento","Poder","Redenção","Fama","Sobreviver","Amor","Fé","Liberdade","Dever"],
+  clima: ["Céu limpo","Nublado","Garoa fina","Chuva forte","Tempestade com raios","Neblina densa","Vento cortante","Calor sufocante","Frio intenso","Neve","Granizo","Fenômeno estranho no céu"],
+  tesouro: ["Bolsa de moedas","Gema bruta","Arma de ótima qualidade","Poção desconhecida","Pergaminho","Mapa para outro tesouro","Joia de família","Informação valiosa","Favor de alguém poderoso","Artefato amaldiçoado","Ferramenta rara","A chave de algo maior"],
+  alteracao: ["Um personagem importante não está onde deveria","O lugar mudou: danificado, ocupado ou diferente","Alguém chegou antes de você","Há uma testemunha inesperada","Você tem menos tempo do que pensava","Um obstáculo novo bloqueia o caminho","Tudo está mais calmo do que o esperado","Tudo está mais perigoso do que o esperado","Um aliado aparece","Interprete a mudança com Ação + Tema"],
+  obstaculo: ["Um guardião","Uma porta trancada","Um terreno perigoso","Uma multidão hostil","Uma armadilha","Uma criatura territorial","Um enigma","Uma negociação difícil","Uma perseguição","Um dilema moral"],
+  gancho: ["Um pedido de ajuda chega por carta","Um estranho morre diante de você","Você acorda sem lembrar da noite anterior","Uma recompensa é anunciada na praça","Um velho amigo aparece ferido","Você testemunha um crime","Algo seu foi roubado","Uma profecia menciona seu nome","Uma criatura aparece onde não deveria","Você herda algo inesperado","Alguém encapuzado oferece um contrato","O lugar onde você está é atacado"],
+  patrono: ["Um nobre decadente","Uma ordem religiosa","Uma guilda de mercadores","Uma criança órfã","Um erudito obcecado","Uma bruxa da floresta","O conselho da cidade","Um criminoso arrependido","Um espírito inquieto","Ninguém: é pessoal"],
+  objetivo: ["Resgatar alguém","Recuperar um objeto","Escoltar uma pessoa ou carga","Investigar um desaparecimento","Destruir uma ameaça","Entregar uma mensagem","Explorar um lugar desconhecido","Proteger um local até o amanhecer","Descobrir a verdade sobre um crime","Impedir um ritual ou plano","Negociar uma trégua","Capturar alguém com vida"],
+  complicacao: ["Um aliado tem uma agenda oculta","O tempo é curto","O objetivo não é o que parece","Uma terceira facção quer a mesma coisa","O caminho principal está bloqueado","Você é acusado de algo","O contratante mente","Um inocente está no fogo cruzado","Os recursos são escassos","O clima piora muito","Uma ferida ou maldição atrapalha","O antagonista conhece você"],
+  reviravolta: ["O antagonista é parente de alguém importante","O contratante é o verdadeiro vilão","A vítima não quer ser salva","O objeto procurado é falso","O antagonista tenta impedir algo pior","Há um traidor entre os aliados","O local é uma armadilha preparada","Tudo faz parte de um plano maior","O antagonista original já morreu e outro assumiu","Você já esteve aqui antes"],
+  pressao: ["Antes do anoitecer","Em três dias","Antes da próxima lua cheia","Antes que um rival chegue","Enquanto a tempestade durar","Antes que a doença se espalhe","Sem prazo, mas alguém observa","Agora mesmo"],
+  tamanho: ["Minúsculo (cabe na mão)","Pequeno (como um cão)","Médio (como uma pessoa)","Grande (como um cavalo)","Enorme (como uma casa)","Colossal (como uma torre)"],
+  forma: ["um inseto","um réptil","um felino","uma ave","um humanoide","um polvo","um verme","uma aranha","um lobo","um peixe",
+    "um fungo","uma planta","uma massa amorfa","um constructo","um cadáver","uma sombra","um cristal vivo","um anfíbio","um morcego","uma quimera"],
+  tracoMonstro: ["muitos olhos","uma carapaça de ossos","pele translúcida","chifres retorcidos","uma boca vertical","brilho bioluminescente","penas negras","nenhum rosto","membros extras","o corpo coberto de musgo",
+    "uma voz quase humana","espinhos pelo corpo","fumaça saindo da pele","uma máscara de casca de árvore","dentes de vidro","um cheiro doce","partes de metal","pele gelada ao toque","uma cauda preênsil","os pés virados para trás"],
+  locomocao: ["Anda sobre quatro patas","Rasteja","Voa","Nada","Salta longas distâncias","Escala paredes e tetos","Flutua sem tocar o chão","Escava por baixo da terra"],
+  ataque: ["Mordida","Garras","Ferrão venenoso","Esmagamento","Tentáculos que agarram","Cuspe ácido","Grito atordoante","Chifrada","Cauda como chicote","Toque gélido","Espinhos disparados","Engolir a presa inteira"],
+  habilidade: ["Fica invisível no escuro","Regenera ferimentos","Imita vozes","Paralisa com o olhar","Divide-se ao ser ferido","Controla animais menores","Causa medo sobrenatural","Atravessa paredes","Explode ao morrer","Drena memórias",
+    "Muda de forma","Teleporte curto","Sopro de fogo ou gelo","Tece teias","Hipnotiza","Camuflagem perfeita","Imune a armas comuns","Comanda os mortos","Sente o medo das presas","Corrói metal com o toque"],
+  fraqueza: ["Luz do sol","Prata","Fogo","Sal","Música","Água corrente","Seu nome verdadeiro","Ferro frio","Barulho alto","Um objeto específico","Pode ser enganado facilmente","O próprio reflexo"],
+  comportamento: ["Caça em bando","Embosca as presas","Territorial","Curioso","Covarde: foge se ferido","Brinca com a presa","Protege um ninho","Faminto e desesperado","Inteligente e disposto a negociar","Obedece a um mestre","Dorme até ser perturbado","Imprevisível"],
+  habitat: ["Cavernas profundas","Pântanos","Ruínas","Florestas densas","Esgotos","Montanhas","Mar aberto","Desertos","Cemitérios","Céus tempestuosos","Entre as pessoas, disfarçado","Outro plano de existência"],
+  desejo: ["Comer","Proteger sua cria","Vingar-se de quem o criou","Voltar para casa","Colecionar objetos brilhantes","Ser adorado","Destruir um lugar específico","Encontrar um par","Terminar uma tarefa antiga","Nada: apenas existe"],
+  sinal: ["Cheiro de enxofre","Marcas de garras no alto das paredes","Animais em silêncio","Ossos limpos empilhados","Frio repentino","Luzes estranhas à noite","Rastros que somem do nada","Gosma brilhante","Sussurros","Plantas murchas ao redor"],
+  despojo: ["Glândula de veneno valiosa","Couro resistente","Dentes para amuletos","Uma gema no estômago","Pertences de vítimas antigas","Sangue usado em poções","Um olho que vê no escuro","Nada: se desfaz em pó","Um ovo","Uma pista sobre sua origem"],
+  origem: ["Natural: evoluiu assim","Criado por magia ou ciência","Uma pessoa amaldiçoada","Veio de outro mundo","Despertou de um sono antigo","Nasceu de um desastre","Foi invocado por alguém","Ninguém sabe"],
+  epiteto: ["o Devorador","a Que Sussurra","o Faminto","a Sem Rosto","o Rei do Lodo","a Mãe das Larvas","o Andarilho da Névoa","o Velho Dente","a Viúva Pálida","o Que Espera","o Ossudo","a Chama Fria"]
+};
+const G = {
+  fantasia: {
+    local: ["Uma torre de mago abandonada","Uma mina anã inundada","Um mosteiro na montanha","Uma floresta de onde ninguém volta","Ruínas de um império antigo","Uma cidade portuária corrupta","Um castelo sitiado","Uma ilha que surge na neblina","Catacumbas sob a catedral","Um vale de gigantes adormecidos","Um mercado subterrâneo","Uma ponte sobre um abismo"],
+    antagonista: ["Um necromante exilado","Um dragão jovem e ambicioso","Um culto a um deus esquecido","Um barão tirano","Uma fada ressentida","Um bando de orcs desesperados","Um cavaleiro caído","Um lich que quer ser lembrado","Uma guilda de assassinos","Um troll que cobra pedágio","Um feiticeiro de sangue","Uma rainha usurpadora"],
+    recompensa: ["Ouro e gemas","Uma arma encantada","Um título de nobreza","Um grimório","Um aliado leal","Um pedaço de terra","Um mapa antigo","Um favor real","Uma montaria rara","Um segredo arcano"]
+  },
+  horror: {
+    local: ["Um hospital desativado","Uma casa de fazenda isolada","Uma igreja cujo sino toca sozinho","Um hotel à beira da estrada","Uma vila de pescadores silenciosa","Um orfanato antigo","Um túnel de metrô fechado","Um farol na costa","Uma floresta com marcas nas árvores","Um porão sem fundo","Um parque de diversões abandonado","Uma escola à noite"],
+    antagonista: ["Uma entidade que imita vozes","Um assassino que nunca é visto","Uma família com um segredo antigo","Um médico com experimentos proibidos","Uma seita local","Um fantasma preso a uma promessa","Algo que vive dentro das paredes","Uma criança que não envelhece","Uma criatura do lago","Um pacto que veio cobrar a dívida","Um vizinho gentil demais","A própria casa"],
+    recompensa: ["Sobreviver","A verdade","Um objeto protetor","Salvar quem você ama","Um diário com respostas","Uma herança em dinheiro","A paz de um espírito","Uma pista para o próximo horror","Esquecer o que viu","Um aliado improvável"]
+  },
+  scifi: {
+    local: ["Uma estação orbital à deriva","Uma colônia em uma lua gelada","Uma nave cargueira sem tripulação","Um laboratório corporativo subterrâneo","Uma megacidade em apagão","Um planeta desértico com ruínas alienígenas","Um asteroide de mineração","Uma arcologia em quarentena","Um cemitério de naves","Uma base de pesquisa no fundo do oceano","Um anel habitacional em revolta","Um posto avançado na fronteira"],
+    antagonista: ["Uma IA que reescreveu as próprias diretrizes","Uma executiva corporativa implacável","Piratas espaciais","Um organismo alienígena adaptável","Um senhor da guerra ciborgue","Clones rebeldes","Um culto tecnológico","Um caçador de recompensas","Uma praga de nanomáquinas","Uma junta militar","Um sindicato do crime","Uma frota de drones automatizados"],
+    recompensa: ["Créditos","Uma nave própria","Dados corporativos","Implantes cibernéticos","Uma licença de voo","Coordenadas secretas","Armamento experimental","Perdão de dívidas","Um androide aliado","Acesso a uma rede restrita"]
+  }
+};
+const GENRE_NAME = {fantasia:"Fantasia", horror:"Horror", scifi:"Ficção científica"};
+/* Foco do evento aleatório: [máximo no d100, nome, explicação, lista envolvida] */
+const FOCO = [
+  [7,"Evento remoto","Algo acontece longe daqui, mas a notícia ou as consequências chegam até você."],
+  [14,"O ambiente muda","O lugar, o clima ou as circunstâncias ao redor se transformam."],
+  [26,"Um personagem age","Alguém já conhecido toma uma iniciativa própria.","npc"],
+  [33,"Novo personagem","Alguém novo entra em cena."],
+  [44,"Um fio avança","Algo aproxima você de resolver um dos fios.","fio"],
+  [52,"Um fio se complica","Um dos fios fica mais difícil ou mais perigoso.","fio"],
+  [56,"Um fio se encerra","Um dos fios termina, bem ou mal, por motivos alheios a você.","fio"],
+  [62,"Surge um novo fio","Uma nova meta, dívida ou mistério aparece."],
+  [70,"Revelação","Um segredo vem à tona."],
+  [78,"Uma ameaça surge","Perigo novo e imediato."],
+  [84,"Oportunidade","Algo a seu favor: um recurso, uma brecha, uma ajuda."],
+  [90,"Problema para você","Algo dá errado para o seu personagem."],
+  [95,"O passado retorna","Alguém ou algo de antes reaparece.","npc"],
+  [100,"Livre interpretação","Use apenas Ação + Tema e deixe a história surpreender você."]
+];
+const REACAO = [[2,"Hostil","Ataca, ameaça ou expulsa."],[5,"Desfavorável","Desconfia e atrapalha."],[8,"Neutro","Cauteloso; quer saber o que ganha com isso."],[11,"Favorável","Disposto a ajudar dentro do razoável."],[12,"Amigável","Ajuda de bom grado e confia em você."]];
+const LIK = [
+  {n:"Impossível",p:5},{n:"Quase impossível",p:10},{n:"Muito improvável",p:20},{n:"Improvável",p:35},{n:"50/50",p:50},
+  {n:"Provável",p:65},{n:"Muito provável",p:80},{n:"Quase certo",p:90},{n:"Certo",p:95}
+];
+const TABLE_INFO = [
+  ["acao","Ação"],["tema","Tema"],["adjetivo","Descritor: adjetivo"],["modo","Descritor: modo"],["local","Local"],["objeto","Objeto"],
+  ["profissao","Personagem: papel"],["traco","Personagem: traço"],["motivacao","Motivação"],["clima","Clima"],["tesouro","Tesouro"],
+  ["alteracao","Cena alterada"],["obstaculo","Obstáculo"],["gancho","Aventura: gancho"],["patrono","Aventura: contratante"],["objetivo","Aventura: objetivo"],
+  ["complicacao","Aventura: complicação"],["reviravolta","Aventura: reviravolta"],["pressao","Aventura: prazo"],
+  ["tamanho","Monstro: tamanho"],["forma","Monstro: forma"],["tracoMonstro","Monstro: traço"],["locomocao","Monstro: locomoção"],["ataque","Monstro: ataque"],
+  ["habilidade","Monstro: habilidade"],["fraqueza","Monstro: fraqueza"],["comportamento","Monstro: comportamento"],["habitat","Monstro: habitat"],
+  ["desejo","Monstro: desejo"],["sinal","Monstro: sinal de presença"],["despojo","Monstro: despojo"],["origem","Monstro: origem"]
+];
+
+/* ---------- Estado ---------- */
+const KEY = "mestre-solo-v1";
+let S = {cf:5, mode:"site", lik:4, threads:[], npcs:[], log:[], scene:1, sceneText:"", genre:"fantasia", mlevel:0};
+let lastAdv = null, lastMon = null;
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function load(){ try { const j = localStorage.getItem(KEY); return j ? JSON.parse(j) : null; } catch(e){ return null; } }
+function seed(){
+  S.threads = ["Descobrir quem incendiou o moinho"];
+  S.npcs = ["Bento, o moleiro", "Irmã Odila, curandeira"];
+  S.log = [{id:1, time:"—", scene:1, title:"Exemplo: Oráculo", kind:"info", items:[
+    {k:"Pergunta", v:"Bento viu quem ateou o fogo?"},
+    {k:"Probabilidade", v:"Provável · 65% com Caos 5"},
+    {k:"Resposta", v:"SIM", d:100, r:41}
+  ]}];
+}
+
+/* ---------- Dados ---------- */
+function rng(n){ const a = new Uint32Array(1); crypto.getRandomValues(a); return (a[0] % n) + 1; }
+function autoRoll(count, sides){ return Array.from({length:count}, () => rng(sides)); }
+let batch = null;
+async function withBatch(fn){ batch = {auto:false}; try { return await fn(); } finally { batch = null; } }
+async function roll(count, sides, label, opts = {}){
+  if (S.mode === "site" || (batch && batch.auto) || opts.forceAuto) return autoRoll(count, sides);
+  return askManual(count, sides, label, opts);
+}
+function askManual(count, sides, label, opts){
+  return new Promise((resolve, reject) => {
+    const ov = $("#ov"), inp = $("#mIn"), err = $("#mErr");
+    $("#mDie").textContent = (count > 1 ? count : "") + "d" + sides;
+    $("#mLabel").textContent = label;
+    let hint;
+    if (count > 1) hint = opts.each ? `Digite os ${count} valores separados por espaço.` : `Digite os ${count} valores separados por espaço, ou só o total.`;
+    else if (sides === 100) hint = "Digite de 1 a 100. 00 conta como 100.";
+    else if (sides === 10) hint = "Digite de 1 a 10. 0 conta como 10.";
+    else hint = `Digite de 1 a ${sides}.`;
+    $("#mHint").textContent = hint;
+    inp.value = ""; err.textContent = "";
+    $("#mRest").hidden = !batch;
+    ov.classList.add("open");
+    setTimeout(() => inp.focus(), 30);
+    const close = () => { ov.classList.remove("open"); off(); };
+    const fix = n => (n === 0 && (sides === 100 || sides === 10)) ? sides : n;
+    const ok = () => {
+      const nums = (inp.value.match(/\d+/g) || []).map(Number).map(fix);
+      if (!nums.length){ err.textContent = "Digite o resultado do dado."; return; }
+      if (nums.length === count){
+        if (nums.some(n => n < 1 || n > sides)){ err.textContent = `Cada valor precisa estar entre 1 e ${sides}.`; return; }
+        close(); resolve(nums); return;
+      }
+      if (count > 1 && nums.length === 1 && !opts.each){
+        const t = nums[0];
+        if (t < count || t > count * sides){ err.textContent = `O total de ${count}d${sides} vai de ${count} a ${count*sides}.`; return; }
+        const a = [t]; a.totalOnly = true; close(); resolve(a); return;
+      }
+      err.textContent = count === 1 ? "Digite só um número." : `Digite exatamente ${count} valores${opts.each ? "" : " ou o total"}.`;
+    };
+    const auto = () => { close(); resolve(autoRoll(count, sides)); };
+    const rest = () => { if (batch) batch.auto = true; auto(); };
+    const cancel = () => { close(); reject(new Error("cancel")); };
+    const key = e => { if (e.key === "Enter"){ e.preventDefault(); ok(); } else if (e.key === "Escape"){ cancel(); } };
+    const map = [["#mOk", ok], ["#mAuto", auto], ["#mRest", rest], ["#mCancel", cancel]];
+    map.forEach(([s, f]) => $(s).addEventListener("click", f));
+    inp.addEventListener("keydown", key);
+    function off(){ map.forEach(([s, f]) => $(s).removeEventListener("click", f)); inp.removeEventListener("keydown", key); }
+  });
+}
+const STD = [2,3,4,6,8,10,12,20,100];
+function dieFor(n){ return STD.includes(n) ? n : 100; }
+async function pick(table, label){
+  const n = table.length, d = dieFor(n);
+  const [r] = await roll(1, d, `${label} (d${d})`);
+  const idx = d === n ? r - 1 : Math.floor((r - 1) * n / 100);
+  return {v: table[idx], d, r};
+}
+async function pickList(list, label){
+  const n = list.length;
+  if (n === 1) return {v: list[0]};
+  const d = STD.find(x => x >= n) || 100;
+  for (;;){
+    const [r] = await roll(1, d, `${label} (d${d}${d > n ? `, role de novo se passar de ${n}` : ""})`);
+    if (r <= n) return {v: list[r - 1], d, r};
+  }
+}
+function rangesFor(n){
+  const d = dieFor(n);
+  if (d === n) return Array.from({length:n}, (_, i) => String(i + 1));
+  const out = [];
+  for (let i = 0; i < n; i++){
+    let lo = null, hi = null;
+    for (let r = 1; r <= 100; r++){ if (Math.floor((r - 1) * n / 100) === i){ if (lo === null) lo = r; hi = r; } }
+    const f = x => String(x).padStart(2, "0");
+    out.push(lo === hi ? f(lo) : `${f(lo)}–${f(hi)}`);
+  }
+  return out;
+}
+
+/* ---------- Nomes (sempre sorteados pelo site) ---------- */
+const NS = {
+  a:["Al","Bel","Cor","Dar","El","Fen","Gal","Hal","Ir","Jor","Kel","Lor","Mar","Nor","Or","Per","Ros","Sar","Tal","Ul","Val","Zan","Ber","Cas","Mir","Tor","Lis","An","Iv","Ed"],
+  b:["a","e","i","o","an","en","ar","or","il","ad","",""],
+  c:["ric","dor","ion","ana","elle","as","us","ina","on","ia","eth","win","ara","ius","os","yn","a","ed"]
+};
+const MS = {
+  a:["Gor","Vak","Skr","Thul","Mor","Zhar","Grak","Nyx","Ur","Krul","Vor","Sith","Drak","Bael","Xul","Gh"],
+  b:["a","o","u","ag","ix","ul","eth","ar","",""],
+  c:["oth","gul","ax","ith","rak","mor","yx","ath","ung","ok","esh","ul"]
+};
+const any = a => a[rng(a.length) - 1];
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+function makeName(){ return cap((any(NS.a) + any(NS.b) + any(NS.c)).toLowerCase()); }
+function makeMonsterName(){ return cap((any(MS.a) + any(MS.b) + any(MS.c)).toLowerCase()); }
+
+/* ---------- Renderização ---------- */
+function dieTxt(it){ return it.dice ? it.dice : (it.d ? `d${it.d} · ${it.r}` : ""); }
+function rowsHTML(items){
+  return `<div class="rows">${items.map(it => `<div class="row"><span class="k">${esc(it.k)}</span><span class="v">${esc(it.v)}${it.x ? `<span class="x">${esc(it.x)}</span>` : ""}</span><span class="die">${esc(dieTxt(it))}</span></div>`).join("")}</div>`;
+}
+function renderControls(){
+  $("#pips").innerHTML = Array.from({length:9}, (_, i) => `<button class="pip${i < S.cf ? " on" : ""}${i + 1 === S.cf ? " cur" : ""}" data-cf="${i+1}" aria-label="Caos ${i+1}" aria-pressed="${i + 1 === S.cf}">${i+1}</button>`).join("");
+  $("#modeSite").setAttribute("aria-pressed", S.mode === "site");
+  $("#modeUser").setAttribute("aria-pressed", S.mode === "user");
+  $("#manualBanner").hidden = S.mode !== "user";
+  $("#sceneBadge").textContent = "Cena " + S.scene;
+  $$("#genreSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.genre === S.genre));
+  $("#mlevel").value = String(S.mlevel || 0);
+  renderLik();
+}
+function yesChance(li, cf){ return clamp(LIK[li].p + (cf - 5) * 5, 1, 99); }
+function bandsFor(y){
+  const ey = Math.ceil(y / 5);
+  const enStart = 100 - Math.ceil((100 - y) / 5) + 1;
+  return {ey, y, enStart};
+}
+function renderLik(){
+  $("#likgrid").innerHTML = LIK.map((l, i) => `<button data-lik="${i}" aria-pressed="${i === S.lik}">${esc(l.n)}<span>${yesChance(i, S.cf)}%</span></button>`).join("");
+  const y = yesChance(S.lik, S.cf), b = bandsFor(y);
+  const f = x => String(x).padStart(2, "0");
+  const seg = [["ey", b.ey], ["y", y - b.ey], ["n", b.enStart - 1 - y], ["en", 100 - b.enStart + 1]];
+  $("#bands").innerHTML = seg.filter(s => s[1] > 0).map(s => `<div class="${s[0]}" style="width:${s[1]}%">${s[1] >= 8 ? s[1] + "%" : ""}</div>`).join("");
+  const parts = [];
+  parts.push(`SIM excepcional 01–${f(b.ey)}`);
+  if (y > b.ey) parts.push(`SIM ${f(b.ey + 1)}–${f(y)}`);
+  if (b.enStart - 1 > y) parts.push(`NÃO ${f(y + 1)}–${f(b.enStart - 1)}`);
+  parts.push(`NÃO excepcional ${b.enStart === 100 ? "00" : f(b.enStart) + "–00"}`);
+  $("#bandlegend").textContent = parts.join(" · ");
+}
+function renderLists(){
+  const li = (arr, kind) => arr.length ? arr.map((t, i) => `<li><span>${esc(t)}</span><button class="xbtn" data-del="${kind}" data-i="${i}" aria-label="Remover ${esc(t)}">×</button></li>`).join("") : `<li class="empty">Lista vazia.</li>`;
+  $("#threadList").innerHTML = li(S.threads, "threads");
+  $("#npcList").innerHTML = li(S.npcs, "npcs");
+}
+function renderLog(){
+  $("#log").innerHTML = S.log.length ? S.log.map(e => `
+    <div class="entry${e.kind === "ev" ? " ev" : ""}">
+      <div class="meta"><span>Cena ${e.scene} · ${esc(e.time)}</span><button class="xbtn" data-logdel="${e.id}" aria-label="Apagar registro">×</button></div>
+      <div class="t">${esc(e.title)}</div>
+      ${e.note ? `<div class="note">${esc(e.note)}</div>` : `<ul>${(e.items || []).map(it => `<li><b>${esc(it.k)}:</b> ${esc(it.v)}${dieTxt(it) ? ` <span class="die">(${esc(dieTxt(it))})</span>` : ""}</li>`).join("")}</ul>`}
+    </div>`).join("") : `<p class="rule" style="padding:10px 0">O diário está vazio. Cada rolagem aparece aqui.</p>`;
+}
+function addLog(title, items, kind = "info", note = ""){
+  S.log.unshift({id: Date.now() + Math.random(), time: new Date().toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"}), scene: S.scene, title, items, kind, note});
+  if (S.log.length > 400) S.log.length = 400;
+  save(); renderLog();
+}
+function renderTables(){
+  $("#tiles").innerHTML = INSP.map((t, i) => `<button data-insp="${i}">${esc(t.name)}<span>${esc(t.dice)}</span></button>`).join("");
+  const extra = [
+    {name:"Foco do evento", dice:"d100", lines: FOCO.map((f, i) => [`${String(i ? FOCO[i-1][0] + 1 : 1).padStart(2,"0")}–${f[0] === 100 ? "00" : String(f[0]).padStart(2,"0")}`, f[1]])},
+    {name:"Reação de personagem", dice:"2d6", lines: REACAO.map((r, i) => { const lo = i ? REACAO[i-1][0] + 1 : 2; return [lo === r[0] ? String(lo) : `${lo}–${r[0]}`, `${r[1]}: ${r[2]}`]; })}
+  ];
+  const mk = (name, dice, lines) => `<details class="tbl"><summary>${esc(name)} <span>${esc(dice)}</span></summary><ul class="tbllist">${lines.map(l => `<li><span class="rg">${esc(l[0])}</span><span>${esc(cap(l[1]))}</span></li>`).join("")}</ul></details>`;
+  let html = extra.map(e => mk(e.name, e.dice, e.lines)).join("");
+  html += TABLE_INFO.map(([id, name]) => { const t = T[id], rg = rangesFor(t.length); return mk(name, "d" + dieFor(t.length), t.map((v, i) => [rg[i], v])); }).join("");
+  for (const g of Object.keys(G)){
+    for (const [k, label] of [["local","Aventura: local"],["antagonista","Aventura: antagonista"],["recompensa","Aventura: recompensa"]]){
+      const t = G[g][k], rg = rangesFor(t.length);
+      html += mk(`${label} (${GENRE_NAME[g]})`, "d" + dieFor(t.length), t.map((v, i) => [rg[i], v]));
+    }
+  }
+  $("#alltables").innerHTML = html;
+}
+
+/* ---------- Oráculo ---------- */
+function isEvent(r){ return r < 100 && r % 11 === 0 && (r / 11) <= S.cf; }
+const ANSWER_NOTE = {
+  "SIM excepcional": "Sim, e ainda por cima… A resposta vem mais forte ou com um bônus.",
+  "SIM": "Sim.",
+  "NÃO": "Não.",
+  "NÃO excepcional": "Não, e pior… O contrário é verdade, ou a recusa traz um problema."
+};
+async function randomEvent(){
+  const items = [];
+  const [r] = await roll(1, 100, "Foco do evento aleatório");
+  const f = FOCO.find(x => r <= x[0]);
+  items.push({k:"Foco", v:f[1], x:f[2], d:100, r});
+  if (f[3] === "npc" && S.npcs.length){ const p = await pickList(S.npcs, "Qual personagem"); items.push({k:"Personagem", v:p.v, d:p.d, r:p.r}); }
+  if (f[3] === "fio" && S.threads.length){ const p = await pickList(S.threads, "Qual fio"); items.push({k:"Fio", v:p.v, d:p.d, r:p.r}); }
+  const a = await pick(T.acao, "Ação"), t = await pick(T.tema, "Tema");
+  items.push({k:"Ação", v:a.v, d:a.d, r:a.r}, {k:"Tema", v:t.v, d:t.d, r:t.r});
+  return items;
+}
+function eventHTML(items){ return `<div class="event"><h3>Evento aleatório</h3>${rowsHTML(items)}</div>`; }
+async function askOracle(){
+  const q = $("#q").value.trim();
+  const y = yesChance(S.lik, S.cf), b = bandsFor(y);
+  await withBatch(async () => {
+    const [r] = await roll(1, 100, "Oráculo" + (q ? ": " + q : ""));
+    let ans;
+    if (r <= b.ey) ans = "SIM excepcional"; else if (r <= y) ans = "SIM"; else if (r >= b.enStart) ans = "NÃO excepcional"; else ans = "NÃO";
+    const st = $("#stamp");
+    st.className = "stamp " + (ans.startsWith("SIM") ? "yes" : "no");
+    st.innerHTML = `${ans.startsWith("SIM") ? "Sim" : "Não"}<small>${ans.includes("excepcional") ? "excepcional" : "d100 · " + (r === 100 ? "00" : r)}</small>`;
+    void st.offsetWidth; st.classList.add("anim");
+    $("#stampnote").textContent = ANSWER_NOTE[ans] + (ans.includes("excepcional") ? ` (d100 · ${r === 100 ? "00" : r})` : "");
+    const items = [{k:"Pergunta", v:q || "(sem texto)"}, {k:"Probabilidade", v:`${LIK[S.lik].n} · ${y}% com Caos ${S.cf}`}, {k:"Resposta", v:ans, d:100, r}];
+    let html = "";
+    if (isEvent(r)){
+      const ev = await randomEvent();
+      html = eventHTML(ev);
+      addLog("Evento aleatório (do oráculo)", ev, "ev");
+    }
+    $("#oracleOut").innerHTML = html;
+    addLog("Oráculo", items);
+  });
+}
+async function manualEvent(){
+  await withBatch(async () => {
+    const ev = await randomEvent();
+    $("#oracleOut").innerHTML = eventHTML(ev);
+    addLog("Evento aleatório", ev, "ev");
+  });
+}
+
+/* ---------- Cenas ---------- */
+async function testScene(){
+  const txt = $("#sceneText").value.trim(); S.sceneText = txt; save();
+  await withBatch(async () => {
+    const [r] = await roll(1, 10, `Teste da cena ${S.scene} (d10 contra Caos ${S.cf})`);
+    const items = [{k:"Cena esperada", v:txt || "(não descrita)"}];
+    let verdict, html = "";
+    if (r > S.cf){
+      verdict = "como esperada";
+      items.push({k:"Resultado", v:"Cena como esperada", x:"Comece a cena do jeito que você imaginou.", d:10, r});
+    } else if (r % 2 === 1){
+      verdict = "alterada";
+      items.push({k:"Resultado", v:"Cena alterada", x:"A cena começa diferente do que você esperava.", d:10, r});
+      const a = await pick(T.alteracao, "Como a cena mudou");
+      items.push({k:"Alteração", v:a.v, d:a.d, r:a.r});
+      if (a.v.startsWith("Interprete")){
+        const ac = await pick(T.acao, "Ação"), tm = await pick(T.tema, "Tema");
+        items.push({k:"Ação", v:ac.v, d:ac.d, r:ac.r}, {k:"Tema", v:tm.v, d:tm.d, r:tm.r});
+      }
+    } else {
+      verdict = "interrompida";
+      items.push({k:"Resultado", v:"Cena interrompida", x:"Algo diferente toma o lugar da cena esperada. Veja o evento.", d:10, r});
+      const ev = await randomEvent();
+      html = eventHTML(ev);
+      addLog("Evento aleatório (interrupção)", ev, "ev");
+    }
+    $("#sceneOut").innerHTML = `<h3 class="result-title">Cena ${S.scene}: ${esc(verdict)}</h3>${rowsHTML(items)}${html}`;
+    addLog(`Cena ${S.scene}: ${verdict}`, items);
+  });
+}
+function endScene(delta){
+  const old = S.cf, n = S.scene;
+  S.cf = clamp(S.cf + delta, 1, 9);
+  S.scene++;
+  S.sceneText = ""; $("#sceneText").value = ""; $("#sceneOut").innerHTML = "";
+  addLog(`Fim da cena ${n}`, [{k:"Controle", v: delta < 0 ? "Eu estava no controle" : delta > 0 ? "Fugiu do controle" : "Equilibrado"}, {k:"Fator de Caos", v:`${old} → ${S.cf}`}]);
+  renderControls(); save();
+}
+
+/* ---------- Inspiração ---------- */
+const INSP = [
+  {name:"Ação + Tema", dice:"d100 + d100", run: async () => { const a = await pick(T.acao, "Ação"), t = await pick(T.tema, "Tema"); return [{k:"Ação", ...a}, {k:"Tema", ...t}]; }},
+  {name:"Descritor", dice:"d100 + d100", run: async () => { const m = await pick(T.modo, "Modo"), a = await pick(T.adjetivo, "Adjetivo"); return [{k:"Modo", ...m}, {k:"Adjetivo", ...a}]; }},
+  {name:"Personagem rápido", dice:"d20 · d20 · d12", run: async () => {
+    const p = await pick(T.profissao, "Papel"), t = await pick(T.traco, "Traço"), m = await pick(T.motivacao, "Motivação");
+    return [{k:"Nome", v:makeName(), dice:"site"}, {k:"Papel", ...p}, {k:"Traço", ...t}, {k:"Motivação", ...m}]; }},
+  {name:"Reação de personagem", dice:"2d6", run: async () => {
+    const v = await roll(2, 6, "Reação de personagem (2d6)"); const s = v.totalOnly ? v[0] : v[0] + v[1];
+    const r = REACAO.find(x => s <= x[0]); return [{k:"Reação", v:r[1], x:r[2], dice:`2d6 · ${s}`}]; }},
+  {name:"Local", dice:"d20 + d100", run: async () => { const l = await pick(T.local, "Local"), a = await pick(T.adjetivo, "Adjetivo"); return [{k:"Local", ...l}, {k:"Atmosfera", ...a}]; }},
+  {name:"Objeto", dice:"d20 + d100", run: async () => { const o = await pick(T.objeto, "Objeto"), a = await pick(T.adjetivo, "Adjetivo"); return [{k:"Objeto", ...o}, {k:"Aparência", ...a}]; }},
+  {name:"Clima", dice:"d12", run: async () => [{k:"Clima", ...(await pick(T.clima, "Clima"))}]},
+  {name:"Tesouro", dice:"d12", run: async () => [{k:"Tesouro", ...(await pick(T.tesouro, "Tesouro"))}]},
+  {name:"Obstáculo", dice:"d10", run: async () => [{k:"Obstáculo", ...(await pick(T.obstaculo, "Obstáculo"))}]},
+  {name:"Nome", dice:"sorteado pelo site", run: async () => [{k:"Nome", v:makeName(), dice:"site"}, {k:"Outro", v:makeName(), dice:"site"}, {k:"Mais um", v:makeName(), dice:"site"}]}
+];
+async function runInsp(i){
+  const t = INSP[i];
+  await withBatch(async () => {
+    const items = await t.run();
+    $("#inspOut").innerHTML = `<div class="panel" style="background:var(--paper)"><h3 class="result-title">${esc(t.name)}</h3>${rowsHTML(items)}</div>`;
+    addLog(t.name, items);
+  });
+}
+
+/* ---------- Rolador ---------- */
+function parseExpr(str){
+  const s = str.replace(/\s+/g, "").toLowerCase().replace(/d%/g, "d100");
+  const bad = `Não entendi “${str}”. Use algo como 2d6+3, d20 ou 4d6kh3.`;
+  if (!s) throw new Error("Digite uma expressão, como 2d6+3.");
+  const re = /([+-])?(?:(\d*)d(\d+)(?:(kh|kl)(\d+))?|(\d+))/y;
+  const terms = []; let i = 0;
+  while (i < s.length){
+    re.lastIndex = i; const m = re.exec(s);
+    if (!m || m[0] === "" || (i > 0 && !m[1])) throw new Error(bad);
+    const sign = m[1] === "-" ? -1 : 1;
+    if (m[3]){
+      const n = m[2] ? +m[2] : 1, d = +m[3];
+      if (n < 1 || n > 100) throw new Error("Use de 1 a 100 dados por grupo.");
+      if (d < 2 || d > 1000) throw new Error("Os dados precisam ter de 2 a 1000 faces.");
+      const k = m[5] ? +m[5] : null;
+      if (m[4] && (k < 1 || k > n)) throw new Error(`Em ${n}d${d}${m[4]}${k}, mantenha entre 1 e ${n} dados.`);
+      terms.push({type:"dice", sign, n, d, keep:m[4] || null, k});
+    } else terms.push({type:"const", sign, v:+m[6]});
+    i = re.lastIndex;
+  }
+  return terms;
+}
+async function rollExpr(str){
+  const terms = parseExpr(str);
+  let total = 0; const parts = [];
+  for (const t of terms){
+    const pre = parts.length ? (t.sign < 0 ? "− " : "+ ") : (t.sign < 0 ? "−" : "");
+    if (t.type === "const"){ total += t.sign * t.v; parts.push(pre + t.v); continue; }
+    const name = `${t.n}d${t.d}${t.keep ? t.keep + t.k : ""}`;
+    const vals = await roll(t.n, t.d, `Role ${name}`, {each: !!t.keep});
+    let sub, desc;
+    if (vals.totalOnly){ sub = vals[0]; desc = `${name} [total ${sub}]`; }
+    else {
+      let arr = vals.map((v, i) => ({v, i, drop:false}));
+      if (t.keep){
+        const sorted = [...arr].sort((a, b) => t.keep === "kh" ? b.v - a.v : a.v - b.v);
+        const keep = new Set(sorted.slice(0, t.k).map(o => o.i));
+        arr.forEach(o => o.drop = !keep.has(o.i));
+      }
+      sub = arr.filter(o => !o.drop).reduce((a, o) => a + o.v, 0);
+      desc = `${name} [${arr.map(o => o.drop ? `(${o.v})` : o.v).join(", ")}]`;
+    }
+    total += t.sign * sub; parts.push(pre + desc);
+  }
+  return {total, detail: parts.join(" ")};
+}
+async function doRoll(str){
+  $("#exprErr").textContent = "";
+  try {
+    const res = await withBatch(() => rollExpr(str));
+    $("#bignum").textContent = res.total;
+    $("#dicedetail").textContent = `${str} → ${res.detail} = ${res.total}`;
+    addLog("Rolagem: " + str, [{k:"Total", v:String(res.total)}, {k:"Dados", v:res.detail}]);
+  } catch(e){
+    if (e.message !== "cancel") $("#exprErr").textContent = e.message;
+  }
+}
+
+/* ---------- Aventura ---------- */
+async function genAdventure(){
+  const g = G[S.genre];
+  await withBatch(async () => {
+    const it = [];
+    const P = async (k, tab) => { const p = await pick(tab, k); it.push({k, v:p.v, d:p.d, r:p.r}); return p.v; };
+    const t1 = await pick(T.tema, "Título: primeiro tema"), t2 = await pick(T.tema, "Título: segundo tema");
+    await P("Gancho", T.gancho);
+    await P("Contratante", T.patrono);
+    const obj = await P("Objetivo", T.objetivo);
+    const local = await P("Local", g.local);
+    const atm = await P("Atmosfera", T.adjetivo);
+    const ant = await P("Antagonista", g.antagonista);
+    const antName = makeName();
+    it.push({k:"Nome do antagonista", v:antName, dice:"site"});
+    await P("Motivação dele", T.motivacao);
+    const comp = await P("Complicação", T.complicacao);
+    const rev = await P("Reviravolta", T.reviravolta);
+    const rec = await P("Recompensa", g.recompensa);
+    await P("Prazo", T.pressao);
+    const o1 = await pick(T.obstaculo, "Cena 1: obstáculo");
+    const o2 = await pick(T.obstaculo, "Cena 2: obstáculo");
+    const a2 = await pick(T.acao, "Cena 2: pista (ação)"), m2 = await pick(T.tema, "Cena 2: pista (tema)");
+    const c4 = await pick(T.local, "Cena 4: onde acontece o confronto");
+    const scenes = [
+      {k:"1 · Chegada", v:`${local}. Obstáculo: ${lowerFirst(o1.v)}.`, x:`Clima do lugar: ${lowerFirst(atm)}.`, d:o1.d, r:o1.r},
+      {k:"2 · Desafio", v:`${o2.v}. Pista: ${a2.v} + ${m2.v}.`, x:"Interprete a pista como algo que aproxima você do objetivo.", dice:`d${o2.d} · ${o2.r}`},
+      {k:"3 · Revés", v:comp + ".", x:"Aumente o Caos em 1 se a situação fugir do controle."},
+      {k:"4 · Clímax", v:`Confronto com ${lowerFirst(ant)}, ${antName}.`, x:`Local do confronto: ${lowerFirst(c4.v)}.`, d:c4.d, r:c4.r},
+      {k:"5 · Desfecho", v:rev + ".", x:`Recompensa em jogo: ${lowerFirst(rec)}.`}
+    ];
+    const title = `${t1.v} e ${t2.v}`;
+    lastAdv = {obj, ant: `${antName}, ${lowerFirst(ant)}`, title};
+    $("#advOut").innerHTML = `
+      <div><p class="lab">${esc(GENRE_NAME[S.genre])} · d100 ${t1.r} + ${t2.r}</p><h3 class="result-title">${esc(title)}</h3></div>
+      ${rowsHTML(it)}
+      <h3 style="margin:6px 0 0">Roteiro em cinco cenas</h3>
+      ${rowsHTML(scenes)}
+      <div class="hstack">
+        <button class="btn small" id="advThread">Adicionar objetivo aos fios</button>
+        <button class="btn small ghost" id="advNpc">Adicionar antagonista aos personagens</button>
+      </div>`;
+    $("#advThread").onclick = () => { addItem("threads", `${lastAdv.obj} (${lastAdv.title})`); $("#advThread").disabled = true; };
+    $("#advNpc").onclick = () => { addItem("npcs", lastAdv.ant); $("#advNpc").disabled = true; };
+    addLog("Aventura: " + title, it.concat(scenes.map(s => ({k:s.k, v:s.v}))));
+  });
+}
+
+/* ---------- Monstro ---------- */
+const THREAT = ["Baixa","Baixa","Moderada","Moderada","Alta","Alta","Perigosa","Perigosa","Mortal","Mortal"];
+const DMG = ["1d6","1d6","1d8","1d8","2d6","2d6","2d8","2d8","3d8","3d8"];
+const SIZE_MULT = [0.5, 0.75, 1, 1.25, 1.6, 2];
+async function genMonster(){
+  await withBatch(async () => {
+    const it = [];
+    let level = S.mlevel, lvRoll = null;
+    if (!level){ [lvRoll] = await roll(1, 10, "Nível de ameaça"); level = lvRoll; }
+    const P = async (k, tab) => { const p = await pick(tab, k); it.push({k, v:cap(p.v), d:p.d, r:p.r}); return p; };
+    const tam = await P("Tamanho", T.tamanho);
+    const sizeIdx = T.tamanho.indexOf(tam.v);
+    const forma = await pick(T.forma, "Forma");
+    let formaTxt = forma.v;
+    if (forma.v === "uma quimera"){
+      const base = T.forma.slice(0, 19);
+      const f1 = await pick(base, "Quimera: primeira forma");
+      let f2 = await pick(base, "Quimera: segunda forma");
+      while (f2.v === f1.v) f2 = {v: any(base)};
+      formaTxt = `uma mistura de ${f1.v} e ${f2.v}`;
+    }
+    it.push({k:"Forma", v:cap(formaTxt), d:forma.d, r:forma.r});
+    const tr1 = await pick(T.tracoMonstro, "Traço 1");
+    let tr2 = await pick(T.tracoMonstro, "Traço 2");
+    while (tr2.v === tr1.v) tr2 = {v: any(T.tracoMonstro.filter(x => x !== tr1.v))};
+    it.push({k:"Traço", v:cap(tr1.v), d:tr1.d, r:tr1.r}, {k:"Traço", v:cap(tr2.v), d:tr2.d, r:tr2.r});
+    await P("Locomoção", T.locomocao);
+    await P("Ataque", T.ataque);
+    await P("Habilidade", T.habilidade);
+    await P("Fraqueza", T.fraqueza);
+    await P("Comportamento", T.comportamento);
+    await P("Habitat", T.habitat);
+    await P("O que quer", T.desejo);
+    await P("Sinal de presença", T.sinal);
+    await P("Despojo", T.despojo);
+    await P("Origem", T.origem);
+    const name = `${makeMonsterName()}, ${any(T.epiteto)}`;
+    const pv = Math.max(2, Math.round(level * 8 * SIZE_MULT[sizeIdx]));
+    const stats = [["Nível", level], ["Ameaça", THREAT[level-1]], ["PV", pv], ["Defesa", 10 + level], ["Ataque", "+" + (level + 1)], ["Dano", DMG[level-1]], ["Moral", Math.min(12, 6 + Math.floor(level / 2))]];
+    const desc = `Lembra ${formaTxt}, com ${tr1.v} e ${tr2.v}.`;
+    lastMon = name;
+    $("#monOut").innerHTML = `
+      <div><p class="lab">${lvRoll ? `Nível sorteado · d10 · ${lvRoll}` : "Nível escolhido"} · nome sorteado pelo site</p><h3 class="result-title">${esc(name)}</h3></div>
+      <p class="desc">${esc(desc)}</p>
+      <div class="statblock">${stats.map(s => `<div class="stat"><b>${esc(s[1])}</b><span>${esc(s[0])}</span></div>`).join("")}</div>
+      <p class="rule">Ficha genérica: Defesa funciona como classe de armadura, Ataque é o bônus na rolagem e Moral é testada em 2d6 (fugir se passar do valor). Ajuste para o seu sistema.</p>
+      ${rowsHTML(it)}
+      <div class="hstack"><button class="btn small" id="monNpc">Adicionar aos personagens</button></div>`;
+    $("#monNpc").onclick = () => { addItem("npcs", lastMon + " (monstro)"); $("#monNpc").disabled = true; };
+    addLog("Monstro: " + name, [{k:"Descrição", v:desc}, {k:"Ficha", v:stats.map(s => `${s[0]} ${s[1]}`).join(" · ")}].concat(it));
+  });
+}
+
+/* ---------- Listas e diário ---------- */
+function addItem(kind, text){
+  text = text.trim(); if (!text) return;
+  S[kind].push(text); save(); renderLists();
+}
+async function pickFrom(kind, label){
+  if (!S[kind].length) return;
+  await withBatch(async () => {
+    const p = await pickList(S[kind], label);
+    addLog(label, [{k: kind === "threads" ? "Fio" : "Personagem", v:p.v, d:p.d, r:p.r}]);
+  });
+}
+function logText(){
+  return [...S.log].reverse().map(e => {
+    const head = `[Cena ${e.scene} · ${e.time}] ${e.title}`;
+    if (e.note) return head + "\n  " + e.note.replace(/\n/g, "\n  ");
+    return head + "\n" + (e.items || []).map(it => `  ${it.k}: ${it.v}${dieTxt(it) ? ` (${dieTxt(it)})` : ""}`).join("\n");
+  }).join("\n\n");
+}
+
+/* ---------- Navegação ---------- */
+const VIEWS = ["oraculo","cena","tabelas","dados","aventura","monstro"];
+function route(){
+  const h = location.hash.replace("#", "");
+  const v = VIEWS.includes(h) ? h : "oraculo";
+  VIEWS.forEach(x => { $("#v-" + x).hidden = x !== v; });
+  $$(".tabs a").forEach(a => { if (a.dataset.view === v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+}
+
+/* ---------- Ligações ---------- */
+const safe = fn => async (...a) => { try { await fn(...a); } catch(e){ if (e.message !== "cancel") console.error(e); } };
+function bind(){
+  $("#pips").addEventListener("click", e => { const b = e.target.closest("[data-cf]"); if (!b) return; S.cf = +b.dataset.cf; save(); renderControls(); });
+  $("#cfDown").onclick = () => { S.cf = clamp(S.cf - 1, 1, 9); save(); renderControls(); };
+  $("#cfUp").onclick = () => { S.cf = clamp(S.cf + 1, 1, 9); save(); renderControls(); };
+  $("#modeSite").onclick = () => { S.mode = "site"; save(); renderControls(); };
+  $("#modeUser").onclick = () => { S.mode = "user"; save(); renderControls(); };
+  $("#likgrid").addEventListener("click", e => { const b = e.target.closest("[data-lik]"); if (!b) return; S.lik = +b.dataset.lik; save(); renderLik(); });
+  $("#askBtn").onclick = safe(askOracle);
+  $("#q").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); safe(askOracle)(); } });
+  $("#evBtn").onclick = safe(manualEvent);
+  $("#sceneBtn").onclick = safe(testScene);
+  $("#sceneText").addEventListener("input", e => { S.sceneText = e.target.value; save(); });
+  $("#endDown").onclick = () => endScene(-1);
+  $("#endUp").onclick = () => endScene(1);
+  $("#endSame").onclick = () => endScene(0);
+  $("#tiles").addEventListener("click", e => { const b = e.target.closest("[data-insp]"); if (b) safe(runInsp)(+b.dataset.insp); });
+  $("#dicebar").innerHTML = [4,6,8,10,12,20,100].map(d => `<button data-expr="1d${d}">d${d}</button>`).join("");
+  document.addEventListener("click", e => { const b = e.target.closest("button[data-expr]"); if (b){ $("#expr").value = b.dataset.expr; doRoll(b.dataset.expr); } });
+  $("#exprForm").addEventListener("submit", e => { e.preventDefault(); doRoll($("#expr").value); });
+  $$("#genreSeg button").forEach(b => b.onclick = () => { S.genre = b.dataset.genre; save(); renderControls(); });
+  $("#advBtn").onclick = safe(genAdventure);
+  $("#mlevel").addEventListener("change", e => { S.mlevel = +e.target.value; save(); });
+  $("#monBtn").onclick = safe(genMonster);
+  $("#threadForm").addEventListener("submit", e => { e.preventDefault(); addItem("threads", $("#threadIn").value); $("#threadIn").value = ""; });
+  $("#npcForm").addEventListener("submit", e => { e.preventDefault(); addItem("npcs", $("#npcIn").value); $("#npcIn").value = ""; });
+  $("#threadPick").onclick = safe(() => pickFrom("threads", "Fio sorteado"));
+  $("#npcPick").onclick = safe(() => pickFrom("npcs", "Personagem sorteado"));
+  document.addEventListener("click", e => {
+    const d = e.target.closest("[data-del]");
+    if (d){ S[d.dataset.del].splice(+d.dataset.i, 1); save(); renderLists(); return; }
+    const l = e.target.closest("[data-logdel]");
+    if (l){ S.log = S.log.filter(x => String(x.id) !== l.dataset.logdel); save(); renderLog(); }
+  });
+  $("#noteBtn").onclick = () => { const t = $("#noteIn").value.trim(); if (!t) return; addLog("Anotação", [], "note", t); $("#noteIn").value = ""; };
+  $("#copyBtn").onclick = async () => {
+    const txt = logText(), btn = $("#copyBtn");
+    try { await navigator.clipboard.writeText(txt); btn.textContent = "Copiado"; setTimeout(() => btn.textContent = "Copiar diário", 1600); }
+    catch(e){ const f = $("#copyFallback"); f.hidden = false; f.value = txt; f.focus(); f.select(); btn.textContent = "Selecione e copie"; }
+  };
+  let clearArmed = null;
+  $("#clearBtn").onclick = () => {
+    const b = $("#clearBtn");
+    if (clearArmed){ clearTimeout(clearArmed); clearArmed = null; S.log = []; save(); renderLog(); b.textContent = "Limpar"; return; }
+    b.textContent = "Confirmar limpeza"; clearArmed = setTimeout(() => { clearArmed = null; b.textContent = "Limpar"; }, 3000);
+  };
+  window.addEventListener("hashchange", route);
+}
+
+function start(data){
+  const saved = (data && typeof data.cf === "number") ? data : load();
+  if (saved) Object.assign(S, saved); else seed();
+  window.claude?.hot?.snapshot?.(() => S);
+  bind();
+  $("#sceneText").value = S.sceneText || "";
+  renderControls(); renderLists(); renderLog(); renderTables(); route();
+}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+</body>
+</html>
