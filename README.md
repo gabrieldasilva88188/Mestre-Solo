@@ -81,21 +81,6 @@ Veja um arquivo completo em `exemplos/sessao-exemplo.json`.
 
 Abra o `index.html` no navegador.
 
-## Publicar no GitHub Pages
-
-1. Crie um repositório no GitHub (por exemplo, `mestre-solo`).
-2. Envie os arquivos para a branch `main`:
-   ```bash
-   git init
-   git add .
-   git commit -m "Mestre Solo"
-   git branch -M main
-   git remote add origin https://github.com/SEU-USUARIO/mestre-solo.git
-   git push -u origin main
-   ```
-3. No repositório, vá em **Settings → Pages**, escolha **Deploy from a branch**, selecione `main` e a pasta `/ (root)`, e salve.
-4. Em um ou dois minutos o site estará em `https://SEU-USUARIO.github.io/mestre-solo/`.
-
 ## Personalizar tabelas
 
 Abra `js/tabelas.js`. As tabelas gerais ficam em `T` e as que mudam por gênero em `G`. Listas com 2, 3, 4, 6, 8, 10, 12, 20 ou 100 itens usam o dado correspondente; outros tamanhos (até 100) são mapeados em faixas de d100, mostradas na aba Tabelas. Para uma tabela nova aparecer na aba Tabelas, acrescente-a também em `TABLE_INFO`.
